@@ -1,0 +1,3 @@
+.venv
+*.sw[o,p]
+__pycache__
