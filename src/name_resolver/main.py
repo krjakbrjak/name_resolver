@@ -57,13 +57,12 @@ class ContainerEvent(BaseModel):
 def main(resolver: Resolver, logger: Logger):
     client = docker.from_env()
 
-    for container in client.containers.list(
-        filters={
-            "status": "running",
-        }
-    ):
-        resolver[container.name] = container.attrs["NetworkSettings"]["IPAddress"]
-        logger.info(f"Added entry: {container.name} -> {resolver[container.name]}")
+    for container in client.containers.list():
+        for _, network in container.attrs["NetworkSettings"]["Networks"].items():
+            resolver[container.name] = network["IPAddress"]
+            logger.info(
+                f"Added entry: {container.name} -> {resolver[container.name]}"
+            )
 
     for event in client.events(
         decode=True, filters={"type": "container", "event": [Action.start, Action.die]}
@@ -71,8 +70,12 @@ def main(resolver: Resolver, logger: Logger):
         container_event = ContainerEvent(**event)
         container = client.containers.get(container_event.actor.ID)
         if container_event.action == Action.start:
-            resolver[container.name] = container.attrs["NetworkSettings"]["IPAddress"]
-            logger.info(f"Added entry: {container.name} -> {resolver[container.name]}")
+            for _, network in container.attrs["NetworkSettings"]["Networks"].items():
+                resolver[container.name] = network["IPAddress"]
+                logger.info(
+                    f"Added entry: {container.name} -> {resolver[network['IPAddress']]}"
+                )
+                logger.info(f"Added entry: {container.name} -> {resolver[container.name]}")
         elif container_event.action == Action.die:
             del resolver[container.name]
             logger.error(f"Removed entry: {container.name}")
