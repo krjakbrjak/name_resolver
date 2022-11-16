@@ -56,6 +56,15 @@ class ContainerEvent(BaseModel):
 
 def main(resolver: Resolver, logger: Logger):
     client = docker.from_env()
+
+    for container in client.containers.list(
+        filters={
+            "status": "running",
+        }
+    ):
+        resolver[container.name] = container.attrs["NetworkSettings"]["IPAddress"]
+        logger.info(f"Added entry: {container.name} -> {resolver[container.name]}")
+
     for event in client.events(
         decode=True, filters={"type": "container", "event": [Action.start, Action.die]}
     ):
