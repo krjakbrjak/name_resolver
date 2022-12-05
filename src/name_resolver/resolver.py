@@ -16,7 +16,13 @@ class Resolver:
 
     def __setitem__(self, name: str, address: str):
         self.data.update({name: ip_address(address)})
-        with open(self.path, "a") as f:
+        content: List[str] = []
+        with open(self.path, "r") as f:
+            content = f.readlines()
+        with open(self.path, "w") as f:
+            for line in content:
+                if name not in line.split():
+                    f.write(line)
             f.write(f"{address} {name}\n")
 
     def __getitem__(self, name: str) -> Optional[Union[IPv4Address, IPv6Address]]:

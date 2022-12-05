@@ -60,25 +60,32 @@ def main(resolver: Resolver, logger: Logger):
     for container in client.containers.list():
         for _, network in container.attrs["NetworkSettings"]["Networks"].items():
             resolver[container.name] = network["IPAddress"]
-            logger.info(
-                f"Added entry: {container.name} -> {resolver[container.name]}"
-            )
+            logger.info(f"Added entry: {container.name} -> {resolver[container.name]}")
 
     for event in client.events(
-        decode=True, filters={"type": "container", "event": [Action.start, Action.die]}
+        decode=True,
+        filters={"type": "container", "event": [Action.start, Action.die]},
     ):
         container_event = ContainerEvent(**event)
-        container = client.containers.get(container_event.actor.ID)
-        if container_event.action == Action.start:
+        if container_event.action == Action.die:
+            del resolver[container_event.actor.attributes.name]
+            logger.info(f"Removed entry: {container_event.actor.attributes.name}")
+        elif container_event.action == Action.start:
+            container = client.containers.get(container_event.actor.ID)
             for _, network in container.attrs["NetworkSettings"]["Networks"].items():
-                resolver[container.name] = network["IPAddress"]
-                logger.info(
-                    f"Added entry: {container.name} -> {resolver[network['IPAddress']]}"
-                )
-                logger.info(f"Added entry: {container.name} -> {resolver[container.name]}")
-        elif container_event.action == Action.die:
-            del resolver[container.name]
-            logger.error(f"Removed entry: {container.name}")
+                try:
+                    resolver[container.name] = network["IPAddress"]
+                    logger.info(
+                        f"Added entry: {container.name} -> {resolver[network['IPAddress']]}"
+                    )
+                    logger.info(
+                        f"Added entry: {container.name} -> {resolver[container.name]}"
+                    )
+                except ValueError:
+                    logger.error(
+                        f"Invalid entry: {container.name} -> {resolver[container.name]}"
+                        + " (missing IP-address)"
+                    )
 
 
 def entry():
@@ -94,6 +101,7 @@ def entry():
         sys.exit(0)
 
     signal.signal(signal.SIGINT, handler)
+    signal.signal(signal.SIGTERM, handler)
 
     main(resolver, logger)
 
