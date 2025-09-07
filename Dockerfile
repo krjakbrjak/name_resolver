@@ -1,14 +1,11 @@
-FROM ubuntu:22.04 AS base
+FROM golang:1.25.1-alpine3.22 AS build
 
-RUN apt-get update && apt install -y python3 python3-pip
+WORKDIR /app
 COPY . .
-RUN pip install . -t /tmp/install
+RUN go build
 
-FROM ubuntu:22.04
+FROM alpine:3.22
 
-RUN apt-get update && apt install -y python3
-COPY --from=base /tmp/install /name_resolver
-ENV PYTHONPATH=/name_resolver:$PYTHONPATH
-ENV PATH=/name_resolver/bin:$PATH
+COPY --from=build /app/name-resolver /usr/local/bin/name-resolver
 
-ENTRYPOINT ["name_resolver"]
+ENTRYPOINT ["/usr/local/bin/name-resolver"]

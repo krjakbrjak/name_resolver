@@ -1,5 +1,3 @@
-.venv
 *.sw[o,p]
-__pycache__
-
 Dockerfile
+.github
