@@ -1,9 +1,40 @@
 package cmd
 
 import (
+	"fmt"
+	"log/slog"
+	"os"
+	"strings"
+
 	"github.com/krjakbrjak/name-resolver/pkg/resolver"
 	"github.com/spf13/cobra"
 )
+
+const (
+	DEBUG = "debug"
+	INFO  = "info"
+	WARN  = "warn"
+	ERROR = "error"
+)
+
+func getLogLevel() slog.Level {
+	level, ok := os.LookupEnv("LOG_LEVEL")
+	if !ok {
+		level = INFO
+	}
+	switch strings.ToLower(level) {
+	case DEBUG:
+		return slog.LevelDebug
+	case INFO:
+		return slog.LevelInfo
+	case WARN:
+		return slog.LevelWarn
+	case ERROR:
+		return slog.LevelError
+	default:
+		return slog.LevelInfo
+	}
+}
 
 // dnsCmd represents the dns command
 var dnsCmd = &cobra.Command{
@@ -35,10 +66,12 @@ var dnsCmd = &cobra.Command{
 			return inspectorErr
 		}
 
+		logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: getLogLevel()}))
 		return resolver.Serve(port, resolver.Filter{
-			Name:   name,
-			Labels: labels,
-		}, fallbackDns, inspector)
+			Name:    name,
+			Labels:  labels,
+			Mapping: mapping,
+		}, fallbackDns, inspector, logger)
 	},
 }
 
