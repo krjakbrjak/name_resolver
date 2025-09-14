@@ -1,5 +1,7 @@
 # Name Resolver
 
+![Publish: main](https://github.com/krjakbrjak/name_resolver/actions/workflows/publish.yml/badge.svg)
+
 When developing web services, it's often necessary to access endpoints by service name instead of just IP address. While tools like [devdns](https://github.com/ruudud/devdns) exist, they may not work seamlessly across all platforms or can be complex to set up.
 
 **Name Resolver** makes this process simple by running a lightweight DNS server that automatically resolves Docker container names and aliases to their respective IP addresses. If a name doesn't match any running container, it falls back to standard DNS servers (like 1.1.1.1 or 8.8.8.8). This is especially useful for testing containerized applications that require public URLs or service discovery by name.
