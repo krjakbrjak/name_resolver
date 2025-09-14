@@ -2,6 +2,7 @@ package resolver
 
 import (
 	"context"
+	"strings"
 
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/filters"
@@ -44,15 +45,23 @@ func (d *DockerInspector) GetContainerMapping(ctx context.Context, filter Filter
 		if inspectResp.NetworkSettings != nil {
 			for _, network := range inspectResp.NetworkSettings.Networks {
 				if network != nil {
-					// create a set of strings
 					for _, alias := range network.Aliases {
 						containerMap[alias] = network.IPAddress
 					}
 					for _, hostname := range network.DNSNames {
 						containerMap[hostname] = network.IPAddress
 					}
+					for _, name := range container.Names {
+						containerMap[strings.TrimPrefix(name, "/")] = network.IPAddress
+					}
 				}
 			}
+		}
+	}
+
+	for k, v := range filter.Mapping {
+		if res, resOk := containerMap[v]; resOk {
+			containerMap[k] = res
 		}
 	}
 

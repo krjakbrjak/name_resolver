@@ -34,8 +34,9 @@ func fallbackResolve(q dns.Question, addresses []string, logger *slog.Logger) []
 func resolveContainers(mapping HostnameIPMapping, r *dns.Msg, fallbackDns []string, logger *slog.Logger) []dns.RR {
 	var answers []dns.RR
 	for _, q := range r.Question {
-		if ip, ok := mapping[q.Name[:len(q.Name)-1]]; ok {
 		logger.Debug("Resolving question", "name", q.Name, "qtype", q.Qtype)
+		name := strings.TrimSuffix(q.Name, ".")
+		if ip, ok := mapping[name]; ok {
 			switch q.Qtype {
 			case dns.TypeA:
 				rr := &dns.A{
